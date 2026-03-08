@@ -1,18 +1,20 @@
 // ==UserScript==
-// @name         4KHD Plus
-// @namespace    http://tampermonkey.net/
-// @version      1.0.0
-// @author       Viki
-// @description  Reader mode with image navigation and floating controls for 4KHD and mirrors
-// @license      MIT
-// @match        *://*.4khd.com/*/*
-// @match        *://*.xxtt.ink/*/*
-// @match        *://*.uuss.uk/*/*
-// @match        *://*.ssuu.uk/*/*
-// @grant        GM_addStyle
-// @grant        GM_getValue
-// @grant        GM_registerMenuCommand
-// @grant        GM_setValue
+// @name               4KHD Plus
+// @name:zh-CN         4KHD 增强阅读
+// @namespace          http://tampermonkey.net/
+// @version            1.0.0
+// @author             Viki
+// @description        Reader mode with image navigation and floating controls for 4KHD and mirrors
+// @description:zh-CN  为 4KHD 及镜像站提供阅读器模式，支持图片导航与悬浮控制
+// @license            MIT
+// @match              *://*.4khd.com/*/*
+// @match              *://*.xxtt.ink/*/*
+// @match              *://*.uuss.uk/*/*
+// @match              *://*.ssuu.uk/*/*
+// @grant              GM_addStyle
+// @grant              GM_getValue
+// @grant              GM_registerMenuCommand
+// @grant              GM_setValue
 // ==/UserScript==
 
 (function () {
@@ -243,28 +245,7 @@ __publicField(this, "currentImageIndex", 0);
       if (spmHandle.isActive()) {
         spmHandle.close();
       } else {
-        const viewportMid = window.innerHeight / 2;
-        const pageImgs = document.querySelectorAll(".entry-content img");
-        const filtered = Array.from(pageImgs).filter((img) => {
-          const src = img.src || img.getAttribute("src") || "";
-          return src && !src.includes("data:") && !src.includes("emoji");
-        });
-        let bestIdx = 0;
-        let bestDist = Infinity;
-        filtered.forEach((img, i) => {
-          const rect = img.getBoundingClientRect();
-          const imgMid = rect.top + rect.height / 2;
-          const dist = Math.abs(imgMid - viewportMid);
-          if (dist < bestDist) {
-            bestDist = dist;
-            bestIdx = i;
-          }
-        });
-        const currentPageRange = store.pageRanges.find(
-          (r) => r.url === window.location.href
-        );
-        const globalIndex = currentPageRange ? currentPageRange.start + bestIdx : bestIdx;
-        spmHandle.open(globalIndex);
+        spmHandle.open();
       }
     };
     store.on("readerModeChanged", () => {
@@ -779,8 +760,7 @@ __publicField(this, "currentImageIndex", 0);
           (r) => exitIndex >= r.start && exitIndex < r.start + r.count
         );
         if (targetRange) {
-          const localIdx = exitIndex - targetRange.start;
-          window.location.href = targetRange.url + "#4khd-scroll=" + localIdx;
+          window.location.href = targetRange.url;
         }
       }
     }
@@ -905,16 +885,7 @@ __publicField(this, "currentImageIndex", 0);
       });
     });
     registerMenuCommands();
-    const scrollMatch = location.hash.match(/^#4khd-scroll=(\d+)$/);
-    if (scrollMatch) {
-      const localIdx = parseInt(scrollMatch[1]);
-      history.replaceState(null, "", location.href.replace(/#4khd-scroll=\d+$/, ""));
-      if (localIdx >= 0 && localIdx < filteredImgs.length) {
-        setTimeout(() => {
-          filteredImgs[localIdx].scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 300);
-      }
-    } else if (store.settings.autoEnterSinglePage) {
+    if (store.settings.autoEnterSinglePage) {
       setTimeout(() => spmHandle.open(), 500);
     }
   })();
