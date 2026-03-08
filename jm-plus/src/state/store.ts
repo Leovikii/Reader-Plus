@@ -1,0 +1,45 @@
+import { GM_setValue } from '$';
+import type { UserSettings } from '../types';
+import { loadSettings } from './config';
+
+type StoreEvent = 'settingsChanged' | 'readerModeChanged' | 'imageResolved';
+type Listener = () => void;
+
+class Store {
+  private _settings: UserSettings;
+  private listeners = new Map<StoreEvent, Set<Listener>>();
+
+  // Reader state
+  currentImageIndex = 0;
+  allImages: string[] = [];
+  aid = 0;
+  autoPlayTimer: ReturnType<typeof setInterval> | null = null;
+  autoPlay = false;
+
+  constructor() {
+    this._settings = loadSettings();
+  }
+
+  get settings(): Readonly<UserSettings> {
+    return this._settings;
+  }
+
+  updateSetting<K extends keyof UserSettings>(key: K, value: UserSettings[K]): void {
+    this._settings[key] = value;
+    GM_setValue(key, value);
+    this.emit('settingsChanged');
+  }
+
+  on(event: StoreEvent, listener: Listener): void {
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
+    }
+    this.listeners.get(event)!.add(listener);
+  }
+
+  emit(event: StoreEvent): void {
+    this.listeners.get(event)?.forEach(fn => fn());
+  }
+}
+
+export const store = new Store();
